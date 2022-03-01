@@ -1,0 +1,76 @@
+---
+title: "RegressionCoef"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Simulated Model : Y = 1 + 2X1 + 3X2 + $\epsilon$, where $\epsilon$ ~ N(0,$2I_{20}$).
+
+The beta coefficients are retained for each simulations and a distribution is plotted which is overlaid with the theoretical distribution.
+
+```{r}
+
+library(ggplot2)
+library(patchwork)
+simdata <- read.csv("HW4sim.csv")
+varE <- 2
+beta0 <- length(5000)
+beta1 <- length(5000)
+beta2 <- length(5000)
+beta3 <- length(5000)
+sigma2 <- length(5000)
+diff <- length(5000)
+
+for (i in 1:5000){
+  
+  y <- 1 + 2*simdata$X1 + 3*simdata$X2 + cbind(rnorm(20, 0, sqrt(varE)))
+  simdata$Y <- y
+  simfit <- lm(Y ~ X1 + X2 + X3 , data = simdata)
+  
+  beta0[i] <- simfit$coefficients[1]
+  beta1[i] <- simfit$coefficients[2]
+  beta2[i] <- simfit$coefficients[3]
+  beta3[i] <- simfit$coefficients[4]
+  sigma2[i] <- summary(simfit)$sigma^2
+  diff[i] <- (beta1[i] - 2)/(summary(simfit)$coefficients[2,2])
+}
+
+matx <- model.matrix(simfit)
+var_beta <- varE*solve(t(matx)%*%matx)
+betaframe <- data.frame(beta0,beta1,beta2,beta3,sigma2,diff)
+
+p0 <- ggplot(data = betaframe, aes(x=beta0)) + geom_histogram(aes(y = ..density..), color= "white", fill="#FF6666",binwidth = 0.1) + 
+stat_function(fun=dnorm, args = list(mean= 1, sd = sqrt(var_beta[1,1])), color = "black")  
+
+p1 <- ggplot(data = betaframe, aes(x=beta1)) + geom_histogram(aes(y = ..density..), color= "white", fill="#FF6666",binwidth = 0.1) + 
+stat_function(fun=dnorm, args = list(mean= 2, sd = sqrt(var_beta[2,2])), color = "black")  
+
+p2 <- ggplot(data = betaframe, aes(x=beta2)) + geom_histogram(aes(y = ..density..), color= "white", fill="#FF6666",binwidth = 0.1) + 
+stat_function(fun=dnorm, args = list(mean= 3, sd = sqrt(var_beta[3,3])), color = "black")  
+
+p3 <- ggplot(data = betaframe, aes(x=beta3)) + geom_histogram(aes(y = ..density..), color= "white", fill="#FF6666",binwidth = 0.1) + 
+stat_function(fun=dnorm, args = list(mean= 0, sd = sqrt(var_beta[4,4])), color = "black")  
+
+p0 + p1 + p2 + p3
+
+
+s1  <- ggplot(data = betaframe, aes(x=sigma2)) + geom_histogram(aes(y = ..density..), color= "white", fill="#FF6666",binwidth = 0.1) + 
+stat_function(fun=dgamma, args = list(shape= 9.5, rate =1/(2*2/19)), color = "black")  
+s1
+```
+
+
+Theoretical distributions:
+
+$\beta_0$ ~ N(1, 0.105)
+
+$\beta_1$ ~ N(2, 0.132)
+
+$\beta_2$ ~ N(3, 0.173)
+
+$\beta_3$ ~ N(0, 0.102)
+
+$\sigma^2$ ~ Gamma(9.5, 4.75)
